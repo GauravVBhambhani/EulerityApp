@@ -52,9 +52,9 @@
 			isa = PBXGroup;
 			children = (
 				1056693E2A367FDF0095E9F3 /* EulerityAppApp.swift */,
-				105669402A367FDF0095E9F3 /* ContentView.swift */,
 				105669422A367FDF0095E9F3 /* Assets.xcassets */,
 				105669442A367FDF0095E9F3 /* Preview Content */,
+				105669402A367FDF0095E9F3 /* ContentView.swift */,
 			);
 			path = EulerityApp;
 			sourceTree = "<group>";
