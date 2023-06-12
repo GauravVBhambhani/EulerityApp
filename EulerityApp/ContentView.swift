@@ -1,9 +1,7 @@
-//
 //  ContentView.swift
 //  EulerityApp
 //
 //  Created by Gaurav Bhambhani on 6/11/23.
-
 
 import SwiftUI
 import CoreImage
@@ -50,11 +48,13 @@ struct ContentView: View {
         .onAppear {
             fetchImages()
         }
-        .sheet(item: $selectedImage) { image in
-            ImageEditorView(image: image, editedImage: $editedImage) { editedImage in
-                uploadImage(editedImage)
-            }
-        }
+        .sheet(item: $selectedImage, onDismiss: {
+                    editedImage = nil // Reset editedImage when the sheet is dismissed
+                }) { image in
+                    ImageEditorView(image: image, editedImage: $editedImage) { editedImage in
+                        uploadImage(editedImage)
+                    }
+                }
     }
 
     private func fetchImages() {
@@ -222,15 +222,35 @@ extension Data {
     }
 }
 
+struct TextOverlay: View {
+    var text: String
+
+    var body: some View {
+        ZStack(alignment: .top) {
+            Color.clear
+
+            Text(text)
+                .font(.largeTitle)
+                .foregroundColor(.white)
+                .padding()
+//                .background(Color.black.opacity(0.5))
+                .cornerRadius(10)
+        }
+        .padding()
+        .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
+    }
+}
+
 struct ImageEditorView: View {
     let image: ImageModel
     @Binding var editedImage: UIImage?
     @State private var overlayText: String = ""
+    @State private var isOverlayAdded: Bool = false
     var onDone: (UIImage) -> Void
 
     var body: some View {
         VStack {
-            ZStack {
+            ZStack(alignment: .top) {
                 if let editedImage = editedImage {
                     Image(uiImage: editedImage)
                         .resizable()
@@ -241,38 +261,61 @@ struct ImageEditorView: View {
                         .scaledToFit()
                 }
 
-                if !overlayText.isEmpty {
-                    Text(overlayText)
-                        .font(.system(size: 32))
+                if isOverlayAdded {
+                    TextOverlay(text: overlayText)
                         .foregroundColor(.white)
                         .padding()
-                        .background(Color.black.opacity(0.5))
+//                        .background(Color.black.opacity(0.5))
                         .cornerRadius(10)
-                        .padding(20)
-                        .offset(x: 0, y: -20)
                 }
             }
 
-            Button("Apply Filter") {
-                applyFilter()
+            VStack {
+                if isOverlayAdded {
+                    TextField("Enter overlay text", text: $overlayText)
+                        .textFieldStyle(RoundedBorderTextFieldStyle())
+                        .padding(.horizontal)
+                }
             }
+            .frame(maxWidth: .infinity, alignment: .topTrailing)
+            .padding()
 
-            TextField("Enter overlay text", text: $overlayText)
-                .padding()
+            HStack {
+                Button("Add Overlay") {
+                    isOverlayAdded = true
+                }
+                .disabled(isOverlayAdded)
 
-            Button("Add Text Overlay") {
-                addTextOverlay()
+                Button("Remove Overlay") {
+                    isOverlayAdded = false
+                }
+                .disabled(!isOverlayAdded)
+
+                Spacer()
+
+                Button("Apply Filter") {
+                    applyFilter()
+                }
+                
+                Button("Remove Filter") {
+                    removeFilter()
+                }
             }
+            .padding()
 
             Button("Save") {
-                if let editedImage = editedImage {
-                    onDone(editedImage)
+                if let editedImage = editedImage, let newImage = addOverlayText(to: editedImage) {
+                    onDone(newImage)
+                } else if let newImage = addOverlayText(to: image.image ?? UIImage()) {
+                    onDone(newImage)
                 }
             }
         }
     }
 
     private func applyFilter() {
+        // Apply the filter
+
         guard let ciImage = CIImage(image: image.image ?? UIImage()) else { return }
 
         let filter = CIFilter.sepiaTone()
@@ -287,35 +330,43 @@ struct ImageEditorView: View {
         editedImage = UIImage(cgImage: cgImage)
     }
 
-    private func addTextOverlay() {
-        guard let editedImage = editedImage else { return }
+    private func removeFilter() {
+        editedImage = nil
+    }
 
-        let imageSize = editedImage.size
+    private func addOverlayText(to image: UIImage) -> UIImage? {
+        UIGraphicsBeginImageContextWithOptions(image.size, false, UIScreen.main.scale)
+        defer { UIGraphicsEndImageContext() }
 
-        UIGraphicsBeginImageContextWithOptions(imageSize, false, 0.0)
+        guard let context = UIGraphicsGetCurrentContext() else { return nil }
 
-        editedImage.draw(at: .zero)
+        // Draw the image
+        image.draw(in: CGRect(origin: .zero, size: image.size))
 
-        let textFont = UIFont.systemFont(ofSize: 32)
-        let textRect = CGRect(x: 20, y: 20, width: imageSize.width - 40, height: imageSize.height - 40)
+        // Draw the overlay text
+        if isOverlayAdded {
+            let textRect = CGRect(x: 10, y: 10, width: image.size.width - 20, height: image.size.height - 20)
+            let textStyle = NSMutableParagraphStyle()
+            textStyle.alignment = .center
 
-        let paragraphStyle = NSMutableParagraphStyle()
-        paragraphStyle.alignment = .center
+            let attributes: [NSAttributedString.Key: Any] = [
+                .font: UIFont.systemFont(ofSize: 240),
+                .foregroundColor: UIColor.white,
+                .paragraphStyle: textStyle
+            ]
 
-        let attributes: [NSAttributedString.Key: Any] = [
-            .font: textFont,
-            .foregroundColor: UIColor.white,
-            .paragraphStyle: paragraphStyle
-        ]
+            let attributedText = NSAttributedString(string: overlayText, attributes: attributes)
+            attributedText.draw(in: textRect)
+        }
 
-        overlayText.draw(in: textRect, withAttributes: attributes)
+        // Get the combined image
+        guard let newImage = UIGraphicsGetImageFromCurrentImageContext() else { return nil }
 
-        guard let newImage = UIGraphicsGetImageFromCurrentImageContext() else { return }
-        UIGraphicsEndImageContext()
-
-        self.editedImage = newImage
+        return newImage
     }
 }
+
+
 
 struct ParentView_Previews: PreviewProvider {
     static var previews: some View {
