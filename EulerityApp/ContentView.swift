@@ -16,9 +16,13 @@ struct ParentView: View {
 }
 
 struct ContentView: View {
+    
     @Binding private var images: [ImageModel]
+    
     @State private var selectedImage: ImageModel?
     @State private var editedImage: UIImage?
+    
+    @State private var isShowingPopup: Bool = false
 
     init(images: Binding<[ImageModel]>) {
         _images = images
@@ -43,18 +47,32 @@ struct ContentView: View {
                     }
                 }
             }
-            .navigationTitle("Image Gallery")
+            .navigationTitle("Eulerity")
+            .navigationBarItems(trailing:
+                                    Button(action: {
+                isShowingPopup = true
+                
+            }) {
+                Image(systemName: "info.circle")
+                    .font(.subheadline)
+                
+            })
         }
         .onAppear {
             fetchImages()
         }
         .sheet(item: $selectedImage, onDismiss: {
-                    editedImage = nil // Reset editedImage when the sheet is dismissed
-                }) { image in
-                    ImageEditorView(image: image, editedImage: $editedImage) { editedImage in
-                        uploadImage(editedImage)
-                    }
-                }
+            editedImage = nil // Reset editedImage when the sheet is dismissed
+            
+        }) { image in
+            ImageEditorView(image: image, editedImage: $editedImage) { editedImage in uploadImage(editedImage)
+            }
+        }
+        .alert(isPresented: $isShowingPopup) {
+            Alert(title: Text("Why you should hire me?"),
+                  message: Text("\nDear Hiring Manager,\n\n As a motivated and aspiring iOS developer, I am eager to gain hands-on experience and further enhance my skills in a professional environment.\n\nI believe that this internship opportunity at Eulerity would provide me with valuable learning opportunities and contribute to my growth as an iOS developer.\n\nThank you for considering my application. I am excited about the possibility of joining the Eulerity team and making meaningful contributions.\n\nBest regards,\nGaurav Bhambhani"), dismissButton: .default(Text("OK"))
+            )
+        }
     }
 
     private func fetchImages() {
@@ -183,7 +201,6 @@ struct ContentView: View {
                         }
                     }
                 } else {
-                    // Error occurred
                     if let data = data {
                         let responseString = String(data: data, encoding: .utf8)
                         print("Error response: \(responseString ?? "")")
@@ -194,26 +211,6 @@ struct ContentView: View {
     }
 }
 
-struct ImageModel: Identifiable, Decodable {
-    let id = UUID()
-    let url: String
-    let created: Date
-    let updated: Date
-    var image: UIImage?
-
-    enum CodingKeys: String, CodingKey {
-        case url, created, updated
-    }
-
-    init(from decoder: Decoder) throws {
-        let container = try decoder.container(keyedBy: CodingKeys.self)
-        url = try container.decode(String.self, forKey: .url)
-        created = try container.decode(Date.self, forKey: .created)
-        updated = try container.decode(Date.self, forKey: .updated)
-        image = nil
-    }
-}
-
 extension Data {
     mutating func appendString(_ string: String) {
         if let data = string.data(using: .utf8) {
@@ -221,152 +218,6 @@ extension Data {
         }
     }
 }
-
-struct TextOverlay: View {
-    var text: String
-
-    var body: some View {
-        ZStack(alignment: .top) {
-            Color.clear
-
-            Text(text)
-                .font(.largeTitle)
-                .foregroundColor(.white)
-                .padding()
-//                .background(Color.black.opacity(0.5))
-                .cornerRadius(10)
-        }
-        .padding()
-        .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
-    }
-}
-
-struct ImageEditorView: View {
-    let image: ImageModel
-    @Binding var editedImage: UIImage?
-    @State private var overlayText: String = ""
-    @State private var isOverlayAdded: Bool = false
-    var onDone: (UIImage) -> Void
-
-    var body: some View {
-        VStack {
-            ZStack(alignment: .top) {
-                if let editedImage = editedImage {
-                    Image(uiImage: editedImage)
-                        .resizable()
-                        .scaledToFit()
-                } else {
-                    Image(uiImage: image.image ?? UIImage(systemName: "photo")!)
-                        .resizable()
-                        .scaledToFit()
-                }
-
-                if isOverlayAdded {
-                    TextOverlay(text: overlayText)
-                        .foregroundColor(.white)
-                        .padding()
-//                        .background(Color.black.opacity(0.5))
-                        .cornerRadius(10)
-                }
-            }
-
-            VStack {
-                if isOverlayAdded {
-                    TextField("Enter overlay text", text: $overlayText)
-                        .textFieldStyle(RoundedBorderTextFieldStyle())
-                        .padding(.horizontal)
-                }
-            }
-            .frame(maxWidth: .infinity, alignment: .topTrailing)
-            .padding()
-
-            HStack {
-                Button("Add Overlay") {
-                    isOverlayAdded = true
-                }
-                .disabled(isOverlayAdded)
-
-                Button("Remove Overlay") {
-                    isOverlayAdded = false
-                }
-                .disabled(!isOverlayAdded)
-
-                Spacer()
-
-                Button("Apply Filter") {
-                    applyFilter()
-                }
-                
-                Button("Remove Filter") {
-                    removeFilter()
-                }
-            }
-            .padding()
-
-            Button("Save") {
-                if let editedImage = editedImage, let newImage = addOverlayText(to: editedImage) {
-                    onDone(newImage)
-                } else if let newImage = addOverlayText(to: image.image ?? UIImage()) {
-                    onDone(newImage)
-                }
-            }
-        }
-    }
-
-    private func applyFilter() {
-        // Apply the filter
-
-        guard let ciImage = CIImage(image: image.image ?? UIImage()) else { return }
-
-        let filter = CIFilter.sepiaTone()
-        filter.inputImage = ciImage
-        filter.intensity = 0.8
-
-        guard let outputImage = filter.outputImage,
-              let cgImage = CIContext().createCGImage(outputImage, from: outputImage.extent) else {
-            return
-        }
-
-        editedImage = UIImage(cgImage: cgImage)
-    }
-
-    private func removeFilter() {
-        editedImage = nil
-    }
-
-    private func addOverlayText(to image: UIImage) -> UIImage? {
-        UIGraphicsBeginImageContextWithOptions(image.size, false, UIScreen.main.scale)
-        defer { UIGraphicsEndImageContext() }
-
-        guard let context = UIGraphicsGetCurrentContext() else { return nil }
-
-        // Draw the image
-        image.draw(in: CGRect(origin: .zero, size: image.size))
-
-        // Draw the overlay text
-        if isOverlayAdded {
-            let textRect = CGRect(x: 10, y: 10, width: image.size.width - 20, height: image.size.height - 20)
-            let textStyle = NSMutableParagraphStyle()
-            textStyle.alignment = .center
-
-            let attributes: [NSAttributedString.Key: Any] = [
-                .font: UIFont.systemFont(ofSize: 240),
-                .foregroundColor: UIColor.white,
-                .paragraphStyle: textStyle
-            ]
-
-            let attributedText = NSAttributedString(string: overlayText, attributes: attributes)
-            attributedText.draw(in: textRect)
-        }
-
-        // Get the combined image
-        guard let newImage = UIGraphicsGetImageFromCurrentImageContext() else { return nil }
-
-        return newImage
-    }
-}
-
-
 
 struct ParentView_Previews: PreviewProvider {
     static var previews: some View {

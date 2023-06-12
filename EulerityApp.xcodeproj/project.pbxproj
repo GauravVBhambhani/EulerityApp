@@ -7,6 +7,9 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
+		1050C48B2A37C91200EB2722 /* ImageModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1050C48A2A37C91200EB2722 /* ImageModel.swift */; };
+		1050C48D2A37C97600EB2722 /* ImageEditorView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1050C48C2A37C97600EB2722 /* ImageEditorView.swift */; };
+		1050C48F2A37C9CD00EB2722 /* TextOverlay.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1050C48E2A37C9CD00EB2722 /* TextOverlay.swift */; };
 		1056693F2A367FDF0095E9F3 /* EulerityAppApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1056693E2A367FDF0095E9F3 /* EulerityAppApp.swift */; };
 		105669412A367FDF0095E9F3 /* ContentView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 105669402A367FDF0095E9F3 /* ContentView.swift */; };
 		105669432A367FDF0095E9F3 /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 105669422A367FDF0095E9F3 /* Assets.xcassets */; };
@@ -14,6 +17,9 @@
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
+		1050C48A2A37C91200EB2722 /* ImageModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ImageModel.swift; sourceTree = "<group>"; };
+		1050C48C2A37C97600EB2722 /* ImageEditorView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ImageEditorView.swift; sourceTree = "<group>"; };
+		1050C48E2A37C9CD00EB2722 /* TextOverlay.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TextOverlay.swift; sourceTree = "<group>"; };
 		1056693B2A367FDF0095E9F3 /* EulerityApp.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = EulerityApp.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		1056693E2A367FDF0095E9F3 /* EulerityAppApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = EulerityAppApp.swift; sourceTree = "<group>"; };
 		105669402A367FDF0095E9F3 /* ContentView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ContentView.swift; sourceTree = "<group>"; };
@@ -51,10 +57,13 @@
 		1056693D2A367FDF0095E9F3 /* EulerityApp */ = {
 			isa = PBXGroup;
 			children = (
-				1056693E2A367FDF0095E9F3 /* EulerityAppApp.swift */,
 				105669422A367FDF0095E9F3 /* Assets.xcassets */,
 				105669442A367FDF0095E9F3 /* Preview Content */,
+				1056693E2A367FDF0095E9F3 /* EulerityAppApp.swift */,
 				105669402A367FDF0095E9F3 /* ContentView.swift */,
+				1050C48A2A37C91200EB2722 /* ImageModel.swift */,
+				1050C48C2A37C97600EB2722 /* ImageEditorView.swift */,
+				1050C48E2A37C9CD00EB2722 /* TextOverlay.swift */,
 			);
 			path = EulerityApp;
 			sourceTree = "<group>";
@@ -138,6 +147,9 @@
 			buildActionMask = 2147483647;
 			files = (
 				105669412A367FDF0095E9F3 /* ContentView.swift in Sources */,
+				1050C48D2A37C97600EB2722 /* ImageEditorView.swift in Sources */,
+				1050C48B2A37C91200EB2722 /* ImageModel.swift in Sources */,
+				1050C48F2A37C9CD00EB2722 /* TextOverlay.swift in Sources */,
 				1056693F2A367FDF0095E9F3 /* EulerityAppApp.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
