@@ -3,7 +3,7 @@
 //  EulerityApp
 //
 //  Created by Gaurav Bhambhani on 6/11/23.
-//
+
 
 import SwiftUI
 import CoreImage
@@ -11,7 +11,7 @@ import CoreImage.CIFilterBuiltins
 
 struct ParentView: View {
     @State private var images: [ImageModel] = []
-    
+
     var body: some View {
         ContentView(images: $images)
     }
@@ -21,11 +21,11 @@ struct ContentView: View {
     @Binding private var images: [ImageModel]
     @State private var selectedImage: ImageModel?
     @State private var editedImage: UIImage?
-    
+
     init(images: Binding<[ImageModel]>) {
         _images = images
     }
-    
+
     var body: some View {
         NavigationView {
             VStack {
@@ -56,7 +56,7 @@ struct ContentView: View {
             }
         }
     }
-    
+
     private func fetchImages() {
         guard let url = URL(string: "https://eulerity-hackathon.appspot.com/image") else { return }
 
@@ -74,12 +74,11 @@ struct ContentView: View {
             do {
                 let decoder = JSONDecoder()
                 let dateFormatter = DateFormatter()
-                dateFormatter.dateFormat = "MMM d, yyyy h:mm:ss a" // Specify the date format
+                dateFormatter.dateFormat = "MMM d, yyyy h:mm:ss a"
                 decoder.dateDecodingStrategy = .formatted(dateFormatter)
-                
+
                 var imageArray = try decoder.decode([ImageModel].self, from: data)
-                
-                // Download the image data for each ImageModel
+
                 for i in 0..<imageArray.count {
                     if let imageUrl = URL(string: imageArray[i].url),
                        let imageData = try? Data(contentsOf: imageUrl),
@@ -87,7 +86,7 @@ struct ContentView: View {
                         imageArray[i].image = image
                     }
                 }
-                
+
                 DispatchQueue.main.async {
                     images = imageArray
                 }
@@ -98,69 +97,115 @@ struct ContentView: View {
     }
 
     private func uploadImage(_ image: UIImage) {
-        guard let url = URL(string: "https://eulerity-hackathon.appspot.com/upload") else { return }
         
-        let appid = "bhambhani.g@northeastern.edu" // Replace with your unique project identifier
-        
+        //GET Request
+        guard let getUrl = URL(string: "https://eulerity-hackathon.appspot.com/upload") else {
+            print("Invalid URL")
+            return
+        }
+
+        URLSession.shared.dataTask(with: getUrl) { data, response, error in
+            if let error = error {
+                print("Error: \(error.localizedDescription)")
+                return
+            }
+
+            guard let data = data else {
+                print("Empty data")
+                return
+            }
+            
+            do {
+                if let jsonObject = try JSONSerialization.jsonObject(with: data, options: []) as? [String: Any],
+                   let uploadURLString = jsonObject["url"] as? String,
+                   let uploadURL = URL(string: uploadURLString) {
+
+                    uploadImage(to: uploadURL, image: image)
+                } else {
+                    print("Invalid JSON response")
+                }
+            } catch {
+                print("Error decoding JSON: \(error.localizedDescription)")
+            }
+        }.resume()
+    }
+
+    private func uploadImage(to url: URL, image: UIImage) {
+        let appid = "bhambhani.g@northeastern.edu"
         let originalURL = selectedImage?.url ?? ""
-        guard let imageData = image.jpegData(compressionQuality: 0.8) else { return }
-        
+
+        guard let imageData = image.jpegData(compressionQuality: 0.8) else {
+            print("Failed to convert image to JPEG data")
+            return
+        }
+
         var request = URLRequest(url: url)
         request.httpMethod = "POST"
         request.addValue("multipart/form-data; boundary=Boundary-\(UUID().uuidString)", forHTTPHeaderField: "Content-Type")
-        
+
         let boundary = "--Boundary-\(UUID().uuidString)\r\n"
-        
+
         var body = Data()
         body.appendString(boundary)
         body.appendString("Content-Disposition: form-data; name=\"appid\"\r\n\r\n")
         body.appendString("\(appid)\r\n")
-        
+
         body.appendString(boundary)
         body.appendString("Content-Disposition: form-data; name=\"original\"\r\n\r\n")
         body.appendString("\(originalURL)\r\n")
-        
+
         body.appendString(boundary)
         body.appendString("Content-Disposition: form-data; name=\"file\"; filename=\"image.jpg\"\r\n")
         body.appendString("Content-Type: image/jpeg\r\n\r\n")
         body.append(imageData)
         body.appendString("\r\n")
-        
+
         body.appendString("--Boundary-\(UUID().uuidString)--\r\n")
-        
+
         request.httpBody = body
-        
-        URLSession.shared.dataTask(with: request) { _, response, error in
+
+        URLSession.shared.dataTask(with: request) { data, response, error in
             if let error = error {
                 print("Error: \(error.localizedDescription)")
                 return
             }
-            
+
             if let response = response as? HTTPURLResponse {
                 print("Upload status code: \(response.statusCode)")
-                // Handle the response status code as needed
+
+                if response.statusCode == 200 {
+                    // Upload successful
+                    if let data = data {
+                        do {
+                            let jsonResponse = try JSONSerialization.jsonObject(with: data, options: [])
+                            print("Upload response: \(jsonResponse)")
+                        } catch {
+                            print("Error decoding JSON response: \(error.localizedDescription)")
+                        }
+                    }
+                }
             }
         }.resume()
     }
 }
 
 struct ImageModel: Identifiable, Decodable {
-    let id = UUID() // Assuming you want to generate a unique ID for each image
+    let id = UUID()
     let url: String
     let created: Date
     let updated: Date
-    var image: UIImage? // Added image property
-    
+    var image: UIImage?
+
     enum CodingKeys: String, CodingKey {
         case url, created, updated
     }
-    
+
     init(from decoder: Decoder) throws {
         let container = try decoder.container(keyedBy: CodingKeys.self)
         url = try container.decode(String.self, forKey: .url)
         created = try container.decode(Date.self, forKey: .created)
         updated = try container.decode(Date.self, forKey: .updated)
-        image = nil // Set initial value of image property
+        image = nil
     }
 }
 
@@ -175,24 +220,45 @@ extension Data {
 struct ImageEditorView: View {
     let image: ImageModel
     @Binding var editedImage: UIImage?
+    @State private var overlayText: String = ""
     var onDone: (UIImage) -> Void
-    
+
     var body: some View {
         VStack {
-            Image(uiImage: image.image ?? UIImage(systemName: "photo")!)
-                .resizable()
-                .scaledToFit()
-            
+            ZStack {
+                if let editedImage = editedImage {
+                    Image(uiImage: editedImage)
+                        .resizable()
+                        .scaledToFit()
+                } else {
+                    Image(uiImage: image.image ?? UIImage(systemName: "photo")!)
+                        .resizable()
+                        .scaledToFit()
+                }
+
+                if !overlayText.isEmpty {
+                    Text(overlayText)
+                        .font(.system(size: 32))
+                        .foregroundColor(.white)
+                        .padding()
+                        .background(Color.black.opacity(0.5))
+                        .cornerRadius(10)
+                        .padding(20)
+                        .offset(x: 0, y: -20)
+                }
+            }
+
             Button("Apply Filter") {
                 applyFilter()
             }
-            
-            if let editedImage = editedImage {
-                Image(uiImage: editedImage)
-                    .resizable()
-                    .scaledToFit()
+
+            TextField("Enter overlay text", text: $overlayText)
+                .padding()
+
+            Button("Add Text Overlay") {
+                addTextOverlay()
             }
-            
+
             Button("Save") {
                 if let editedImage = editedImage {
                     onDone(editedImage)
@@ -200,20 +266,49 @@ struct ImageEditorView: View {
             }
         }
     }
-    
+
     private func applyFilter() {
         guard let ciImage = CIImage(image: image.image ?? UIImage()) else { return }
-        
+
         let filter = CIFilter.sepiaTone()
         filter.inputImage = ciImage
         filter.intensity = 0.8
-        
+
         guard let outputImage = filter.outputImage,
               let cgImage = CIContext().createCGImage(outputImage, from: outputImage.extent) else {
             return
         }
-        
+
         editedImage = UIImage(cgImage: cgImage)
+    }
+
+    private func addTextOverlay() {
+        guard let editedImage = editedImage else { return }
+
+        let imageSize = editedImage.size
+
+        UIGraphicsBeginImageContextWithOptions(imageSize, false, 0.0)
+
+        editedImage.draw(at: .zero)
+
+        let textFont = UIFont.systemFont(ofSize: 32)
+        let textRect = CGRect(x: 20, y: 20, width: imageSize.width - 40, height: imageSize.height - 40)
+
+        let paragraphStyle = NSMutableParagraphStyle()
+        paragraphStyle.alignment = .center
+
+        let attributes: [NSAttributedString.Key: Any] = [
+            .font: textFont,
+            .foregroundColor: UIColor.white,
+            .paragraphStyle: paragraphStyle
+        ]
+
+        overlayText.draw(in: textRect, withAttributes: attributes)
+
+        guard let newImage = UIGraphicsGetImageFromCurrentImageContext() else { return }
+        UIGraphicsEndImageContext()
+
+        self.editedImage = newImage
     }
 }
 
