@@ -141,26 +141,25 @@ struct ContentView: View {
 
         var request = URLRequest(url: url)
         request.httpMethod = "POST"
-        request.addValue("multipart/form-data; boundary=Boundary-\(UUID().uuidString)", forHTTPHeaderField: "Content-Type")
-
-        let boundary = "--Boundary-\(UUID().uuidString)\r\n"
+        let boundary = "Boundary-\(UUID().uuidString)"
+        request.setValue("multipart/form-data; boundary=\(boundary)", forHTTPHeaderField: "Content-Type")
 
         var body = Data()
-        body.appendString(boundary)
+        body.appendString("--\(boundary)\r\n")
         body.appendString("Content-Disposition: form-data; name=\"appid\"\r\n\r\n")
         body.appendString("\(appid)\r\n")
 
-        body.appendString(boundary)
+        body.appendString("--\(boundary)\r\n")
         body.appendString("Content-Disposition: form-data; name=\"original\"\r\n\r\n")
         body.appendString("\(originalURL)\r\n")
 
-        body.appendString(boundary)
+        body.appendString("--\(boundary)\r\n")
         body.appendString("Content-Disposition: form-data; name=\"file\"; filename=\"image.jpg\"\r\n")
         body.appendString("Content-Type: image/jpeg\r\n\r\n")
         body.append(imageData)
         body.appendString("\r\n")
 
-        body.appendString("--Boundary-\(UUID().uuidString)--\r\n")
+        body.appendString("--\(boundary)--\r\n")
 
         request.httpBody = body
 
@@ -182,6 +181,12 @@ struct ContentView: View {
                         } catch {
                             print("Error decoding JSON response: \(error.localizedDescription)")
                         }
+                    }
+                } else {
+                    // Error occurred
+                    if let data = data {
+                        let responseString = String(data: data, encoding: .utf8)
+                        print("Error response: \(responseString ?? "")")
                     }
                 }
             }
