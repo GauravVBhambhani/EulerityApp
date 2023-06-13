@@ -7,7 +7,7 @@ import SwiftUI
 import CoreImage
 import CoreImage.CIFilterBuiltins
 
-struct ParentView: View {
+struct HomeView: View {
     @State private var images: [ImageModel] = []
 
     var body: some View {
@@ -47,7 +47,7 @@ struct ContentView: View {
                     }
                 }
             }
-            .navigationTitle("Eulerity")
+            .navigationTitle("Eulerity Hackathon")
             .navigationBarItems(trailing:
                                     Button(action: {
                 isShowingPopup = true
@@ -59,13 +59,13 @@ struct ContentView: View {
             })
         }
         .onAppear {
-            fetchImages()
+            getImages()
         }
         .sheet(item: $selectedImage, onDismiss: {
             editedImage = nil // Reset editedImage when the sheet is dismissed
             
         }) { image in
-            ImageEditorView(image: image, editedImage: $editedImage) { editedImage in uploadImage(editedImage)
+            ImageEditorView(image: image, editedImage: $editedImage) { editedImage in postImage(editedImage)
             }
         }
         .alert(isPresented: $isShowingPopup) {
@@ -75,7 +75,7 @@ struct ContentView: View {
         }
     }
 
-    private func fetchImages() {
+    private func getImages() {
         guard let url = URL(string: "https://eulerity-hackathon.appspot.com/image") else { return }
 
         URLSession.shared.dataTask(with: url) { data, _, error in
@@ -114,7 +114,7 @@ struct ContentView: View {
         }.resume()
     }
 
-    private func uploadImage(_ image: UIImage) {
+    private func postImage(_ image: UIImage) {
         
         //GET Request
         guard let getUrl = URL(string: "https://eulerity-hackathon.appspot.com/upload") else {
@@ -138,7 +138,7 @@ struct ContentView: View {
                    let uploadURLString = jsonObject["url"] as? String,
                    let uploadURL = URL(string: uploadURLString) {
 
-                    uploadImage(to: uploadURL, image: image)
+                    postImage(to: uploadURL, image: image)
                 } else {
                     print("Invalid JSON response")
                 }
@@ -148,7 +148,7 @@ struct ContentView: View {
         }.resume()
     }
 
-    private func uploadImage(to url: URL, image: UIImage) {
+    private func postImage(to url: URL, image: UIImage) {
         let appid = "bhambhani.g@northeastern.edu"
         let originalURL = selectedImage?.url ?? ""
 
@@ -219,8 +219,8 @@ extension Data {
     }
 }
 
-struct ParentView_Previews: PreviewProvider {
+struct HomeView_Previews: PreviewProvider {
     static var previews: some View {
-        ParentView()
+        HomeView()
     }
 }

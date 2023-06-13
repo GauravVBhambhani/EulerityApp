@@ -12,6 +12,9 @@ struct ImageEditorView: View {
     @Binding var editedImage: UIImage?
     @State private var overlayText: String = ""
     @State private var isOverlayAdded: Bool = false
+    
+    @State private var isShowingPopup: Bool = false
+
     var onDone: (UIImage) -> Void
     
     var body: some View {
@@ -94,6 +97,7 @@ struct ImageEditorView: View {
                     } else if let newImage = addOverlayText(to: image.image ?? UIImage()) {
                         onDone(newImage)
                     }
+                    isShowingPopup = true
                     
                 }) {
                     Image(systemName: "square.and.arrow.up")
@@ -104,6 +108,13 @@ struct ImageEditorView: View {
                 .background(Color.blue)
                 .foregroundColor(.white)
                 .cornerRadius(10)
+            }
+            .alert(isPresented: $isShowingPopup) {
+                Alert(
+                    title: Text("Upload Successful"),
+                    message: Text("The image has been uploaded successfully."),
+                    dismissButton: .default(Text("OK"))
+                )
             }
             .padding(.horizontal)
             .padding(.bottom)

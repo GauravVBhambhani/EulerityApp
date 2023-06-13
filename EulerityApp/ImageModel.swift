@@ -5,7 +5,6 @@
 //  Created by Gaurav Bhambhani on 6/12/23.
 //
 
-import Foundation
 import SwiftUI
 
 struct ImageModel: Identifiable, Decodable {
@@ -22,8 +21,10 @@ struct ImageModel: Identifiable, Decodable {
     init(from decoder: Decoder) throws {
         let container = try decoder.container(keyedBy: CodingKeys.self)
         url = try container.decode(String.self, forKey: .url)
+        
         created = try container.decode(Date.self, forKey: .created)
         updated = try container.decode(Date.self, forKey: .updated)
+        
         image = nil
     }
 }
