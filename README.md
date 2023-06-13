@@ -1,4 +1,4 @@
-# EulerityApp
+# Eulerity Hackathon App
 
 <img src="https://github.com/GauravVBhambhani/EulerityApp/assets/113461154/74fb9cdc-0c38-4072-96f5-792758e457d5" width="300">
 
